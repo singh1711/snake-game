@@ -1,92 +1,126 @@
-let canvas = document.querySelector('canvas');// board
-let ctx = canvas.getContext('2d'); // brush
+let canvas = document.querySelector('canvas');
+let ctx = canvas.getContext('2d');
+
 
 let cellSize = 50;
+let boardWidth = 1000;
 let boardHeight = 600;
-let boardWidth = 1200;
-let direction = "right";
 
-//Snae ke cells jiski vajah se snake rectangle bann raha hai
-let snakeCells = [[0,0],[50,0],[100,0]];
-//let snakeCells = [[0,0] , [50,0]];
+let snakeCells = [ [0,0]  ];
 
-// food generation 
-function foodGeneration(){
-    return[
-        Math.round((Math.random()*(boardWidth- cellSize))/cellSize)*cellSize,
-        Math.round((Math.random()*(boardHeight- cellSize))/cellSize)*cellSize
-    ]
-}
-let food = foodGeneration();
+let direction = 'right';
 
-// Snake draw
+let foodCells = generateRandomCells(); // [x,y]
+
+let gameOver = false;
+
+let score = 0;
+
+document.addEventListener('keydown' , function(e){
+    console.log(e)
+    if(e.key === 'ArrowLeft'){direction = 'left'}
+    else if(e.key === 'ArrowUp'){direction = 'up'}
+    else if(e.key === 'ArrowDown'){direction = 'down'}
+    else if(e.key === 'ArrowRight'){direction = 'right'}
+})
+
+
 function draw(){
-    // erase puri board
-    ctx.clearRect(0 , 0 , boardWidth , boardHeight);
-    //draw
-    for (let cell of snakeCells){
-        ctx.fillStyle = 'red';
-        ctx.fillRect(cell[0],cell[1], cellSize, cellSize);
+
+    if(gameOver === true){
+        clearInterval(intervalId);
+        ctx.fillStyle = 'red'
+        ctx.font = '50px sans-serif'
+        ctx.fillText('Game Over!!' , 200,200)
+        return;
     }
-    ctx.fillStyle = 'green';
-    ctx.fillRect(food[0],food[1],cellSize,cellSize)
+
+    ctx.clearRect(0,0,boardWidth,boardHeight);
+    // draw snake
+    for(let item of snakeCells){
+        ctx.fillStyle = "brown"
+        ctx.fillRect(item[0] , item[1] , cellSize ,cellSize );
+        ctx.strokeStyle = "golden"
+        ctx.strokeRect(item[0] , item[1] , cellSize ,cellSize );
+    }
+    // draw food
+    ctx.fillStyle = "yellow"
+    ctx.fillRect(foodCells[0] , foodCells[1] , cellSize ,cellSize )
+
+    // draw score
+    ctx.font = '22px cursive'
+    ctx.fillText(`Score: ${score}` , 30 , 30);
+
 }
 
-// har thodi der baad snake update hoga
 function update(){
     let headX = snakeCells[snakeCells.length - 1][0];
     let headY = snakeCells[snakeCells.length - 1][1];
 
-    //let newheadX = headX + cellSize;
-    //let newheadY = headY;
-    let newheadX;
-    let newheadY;
+    let newHeadX;
+    let newHeadY;
+    // according the direction
+    if(direction === 'left'){
+        newHeadX = headX - cellSize;
+        newHeadY = headY;
+        if(newHeadX < 0 || checkmate(newHeadX,newHeadY)){
+            gameOver = true;
+        }
+    }
+    else if(direction === 'up'){
+        newHeadX = headX;
+        newHeadY = headY-cellSize;
+        if(newHeadY < 0 || checkmate(newHeadX,newHeadY)){
+            gameOver = true;
+        }
+    }
+    else if(direction === 'down'){
+        newHeadX = headX;
+        newHeadY = headY+cellSize;
+        if(newHeadY === boardHeight || checkmate(newHeadX,newHeadY)){
+            gameOver = true;
+        }
+    }
+    else if(direction==='right'){
+        newHeadX = headX + cellSize;
+        newHeadY = headY;
+        if(newHeadX === boardWidth || checkmate(newHeadX,newHeadY)){
+            gameOver = true;
+        }
+    }
+    
+    snakeCells.push([newHeadX ,newHeadY]);
 
-    if(direction ==="right"){
-        newheadX = headX + cellSize;
-        newheadY = headY;
-    }
-    else if(direction ==="left"){
-        newheadX = headX - cellSize;
-        newheadY = headY;
-    }
-    else if(direction ==="up"){
-        newheadX = headX;
-        newheadY = headY - cellSize;
-    }
-    else if(direction ==="down"){
-        newheadX = headX;
-        newheadY = headY + cellSize;
-    }
-    snakeCells.push([newheadX, newheadY]);
-
-    // food bite karna hoga
-
-    if (food[0] === newheadX && food[1] === newheadY){
-        food = foodGeneration();
+    if(newHeadX === foodCells[0] && newHeadY === foodCells[1]){
+        foodCells = generateRandomCells();
+        score+=1;
     }
     else{
-        snakeCells.shift();
+        snakeCells.shift()
     }
-    //snakeCells.shift();
+
+    
 }
 
-document.addEventListener('keydown', function(e){
-    if(e.key === 'ArrowUp'){
-        direction = 'up'
-    }
-    else if(e.key === 'ArrowRight'){
-        direction ='right'
-    }
-    else if(e.key === 'ArrowDown'){
-        direction ='down'
-    }
-    else if(e.key === 'ArrowLeft'){
-        direction ='left'
-    }
-})
+function generateRandomCells(){
+    return [
+        Math.round((Math.random()*(boardWidth - cellSize))/cellSize)*cellSize , //x
+        Math.round((Math.random()*(boardHeight - cellSize))/cellSize)*cellSize  //y
+    ]
+}
 
-setInterval(function(){
-    update();
-    draw();
-},300)
+// khud ko kaatoge to marr jaoge
+function checkmate(newHeadX , newHeadY ){
+    for(let item of snakeCells){
+        if(item[0] === newHeadX && item[1] === newHeadY){
+            return true;
+        }
+    }
+    return false;
+}
+
+
+let intervalId = setInterval(function(){
+        update();
+        draw();
+} , 200)
